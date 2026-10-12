@@ -651,6 +651,21 @@ function parseFavText(text){
   }
   return {ok,skipped};
 }
+/* Přidá do oblíbených platné kódy z textu (stávající nemaže) */
+function importFavText(text){
+  const r=parseFavText(text), cur=getFav();
+  const add=r.ok.filter(k=>!cur.includes(k));
+  if(add.length) setFav(cur.concat(add));
+  toast(add.length?('Přidáno kódů: '+add.length+(r.skipped?' (nerozpoznáno: '+r.skipped+')':'')):(r.skipped?'Nic nepřidáno, kódy nejsou v číselníku.':'Nic nového k přidání.'));
+  favChanged();
+}
+function saveFavFile(text){
+  const url=URL.createObjectURL(new Blob([text+'\n'],{type:'text/plain;charset=utf-8'}));
+  const a=document.createElement('a'); a.href=url; a.download='mkn10-moje-diagnozy.txt';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),2000);
+  toast('Seznam se ukládá do souboru');
+}
 function renderFav(){
   const box=$('#favPanel'); box.replaceChildren();
   const a=getFav();
@@ -685,13 +700,14 @@ function renderFav(){
       ta,
       h('div',{class:'actions'},
         h('button',{type:'button',class:'btn',onclick:()=>copy(ta.value,'Seznam zkopírován')},'Zkopírovat seznam'),
-        h('button',{type:'button',class:'btn primary',onclick:()=>{
-          const r=parseFavText(ta.value), cur=getFav();
-          const add=r.ok.filter(k=>!cur.includes(k));
-          if(add.length) setFav(cur.concat(add));
-          toast(add.length?('Přidáno kódů: '+add.length+(r.skipped?' (nerozpoznáno: '+r.skipped+')':'')):(r.skipped?'Nic nepřidáno, kódy nejsou v číselníku.':'Nic nového k přidání.'));
-          favChanged();
-        }},'Načíst ze seznamu'))));
+        h('button',{type:'button',class:'btn',onclick:()=>saveFavFile(ta.value)},'Uložit do souboru'),
+        h('button',{type:'button',class:'btn',onclick:()=>$('#favFile').click()},'Načíst ze souboru'),
+        h('button',{type:'button',class:'btn primary',onclick:()=>importFavText(ta.value)},'Načíst ze seznamu')),
+      h('input',{type:'file',id:'favFile',accept:'.txt,.csv,text/plain',hidden:true,onchange:ev=>{
+        const f=ev.target.files&&ev.target.files[0]; if(!f) return;
+        f.text().then(t=>{ ta.value=t; importFavText(t); }).catch(()=>toast('Soubor se nepodařilo přečíst.'));
+        ev.target.value='';
+      }})));
   }
 }
 
