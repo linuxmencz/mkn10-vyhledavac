@@ -1,0 +1,7 @@
+services:
+  mkn10:
+    build: .
+    container_name: mkn10-vyhledavac
+    ports:
+      - "8080:80"
+    restart: unless-stopped
